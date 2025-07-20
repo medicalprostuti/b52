@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোনটি প্লাজমিডের বৈশিষ্ট্য?",
+          options: {
+            a: "এক ব্যাকটেরিয়া থেকে অন্য ব্যাকটেরিয়ায় স্থানান্তরে সক্ষম",
+            b: "অ্যান্টিমাইক্রোবিয়াল রেজিস্ট্যান্সের বিরুদ্ধে কোন ভূমিকা নাই",
+            c: "100um পর্যন্ত লম্বা হতে পারে",
+            d: "কোষের ক্রোমোসোমের মতো",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্লাজমিড হলো ব্যাকটেরিয়ার কোষে অবস্থিত ছোট, গোলাকার, দ্বিসূত্রক DNA অণু যা ব্যাকটেরিয়ার মূল ক্রোমোজোম থেকে আলাদাভাবে প্রতিলিপি তৈরি করতে পারে। এদের অন্যতম গুরুত্বপূর্ণ বৈশিষ্ট্য হলো এরা <b>কনজুগেশন</b> প্রক্রিয়ার মাধ্যমে <b>এক ব্যাকটেরিয়া থেকে অন্য ব্যাকটেরিয়ায় স্থানান্তরিত হতে পারে</b>। এই স্থানান্তর ক্ষমতা তাদের জিনগত উপাদান, বিশেষ করে অ্যান্টিবায়োটিক প্রতিরোধের জিন ছড়িয়ে দিতে সাহায্য করে। কিছু প্লাজমিডে অ্যান্টিবায়োটিক প্রতিরোধী জিন থাকতে পারে, যা অপশন (b) কে ভুল প্রমাণ করে। প্লাজমিড সাধারণত কোষের ক্রোমোসোমের চেয়ে অনেক ছোট হয় (কিছু হাজার থেকে কয়েক লক্ষ বেস পেয়ার), তাই অপশন (c) ও (d) ভুল।</p>",
+        },
+        {
+          id: 2,
+          question: "পলিমারেজ চেইন রিয়েকশন এর বিষয়ে কোনটি সঠিক?",
+          options: {
+            a: "ভাইরাল লোডের নিম্নমাত্রা নির্ণয় করা যায় না",
+            b: "শুধুমাত্র DNA থেকে DNA তৈরি হয়",
+            c: "কোষ নির্ভর DNA ক্লোনিং",
+            d: "১৯৮৩ সালে আবিষ্কৃত হয়",
+          },
+          correct: "d",
+          explanation:
+            "<p>পলিমারেজ চেইন রিয়েকশন (PCR) একটি অত্যাধুনিক কৌশল যা DNA-এর একটি নির্দিষ্ট অংশের অসংখ্য কপি তৈরি করতে ব্যবহৃত হয়। এই প্রক্রিয়াটি <b>১৯৮৩ সালে ক্যারি মুলিস (Kary Mullis) আবিষ্কার করেন</b>, তাই অপশন (d) সঠিক। PCR এর মাধ্যমে ভাইরাল লোডের (ভাইরাসের পরিমাণ) অত্যন্ত নিম্ন মাত্রাও নির্ণয় করা সম্ভব, যা অপশন (a) কে ভুল প্রমাণ করে। PCR প্রক্রিয়ায় DNA টেমপ্লেট ব্যবহার করে DNA পলিমারেজ এনজাইমের মাধ্যমে নতুন DNA তৈরি হয়, যা DNA থেকে DNA তৈরি করে, তবে এটি 'শুধুমাত্র' DNA থেকে DNA তৈরি করে এই ধারণাটি অপশন (b) তে বিভ্রান্তিকর হতে পারে কারণ PCR এর বিভিন্ন প্রকারভেদ রয়েছে (যেমন RT-PCR যেখানে RNA থেকে DNA তৈরি হয়)। PCR একটি <b>কোষ-মুক্ত (cell-free) DNA ক্লোনিং</b> পদ্ধতি, তাই অপশন (c) ভুল।</p>",
+        },
+        {
+          id: 3,
+          question: "কোনটি 'আণবিক কাঁচি' বা 'Molecular scissor' নামে পরিচিত?",
+          options: {
+            a: "রেস্ট্রিকশন এনজাইম",
+            b: "প্লাজমিড",
+            c: "ইন্টারফেরন",
+            d: "লাইগেজ এনজাইম",
+          },
+          correct: "a",
+          explanation:
+            "<p><b>রেস্ট্রিকশন এনজাইম (Restriction enzyme)</b> 'আণবিক কাঁচি' বা 'Molecular scissor' নামে পরিচিত। এই এনজাইম DNA অণুর নির্দিষ্ট নিউক্লিওটাইড সিকোয়েন্স (recognition site) শনাক্ত করে এবং সেই স্থানে বা তার কাছাকাছি DNA দ্বিসূত্রককে কেটে ফেলে। এই ক্ষমতা জেনেটিক ইঞ্জিনিয়ারিং-এ খুবই গুরুত্বপূর্ণ, কারণ এটি বিজ্ঞানীদের DNA খণ্ডগুলোকে নির্দিষ্ট স্থানে কাটার সুযোগ দেয়। প্লাজমিড হলো DNA ভেক্টর, ইন্টারফেরন হলো ভাইরাস প্রতিরোধী প্রোটিন এবং লাইগেজ এনজাইম DNA খণ্ডকে জোড়া লাগাতে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 4,
+          question: "কোন প্রযুক্তিতে ইনসুলিন তৈরি করা হয়?",
+          options: {
+            a: "জিন ক্লোনিং",
+            b: "ডিএনএ রিকম্বিনেন্ট",
+            c: "টিস্যু কালচার",
+            d: "এক্সপ্লান্ট কালচার",
+          },
+          correct: "b",
+          explanation:
+            "<p>জিন প্রকৌশলের একটি গুরুত্বপূর্ণ প্রয়োগ হলো <b>রিকম্বিনেন্ট DNA (Recombinant DNA) প্রযুক্তি</b>, যার মাধ্যমে বাণিজ্যিকভাবে ইনসুলিন তৈরি করা হয়। মানব ইনসুলিন উৎপাদনকারী জিনকে ব্যাকটেরিয়ার প্লাজমিডে প্রবেশ করিয়ে সেই ব্যাকটেরিয়াকে ইনসুলিন তৈরির কারখানায় পরিণত করা হয়। এটি জেনেটিক ইঞ্জিনিয়ারিং এর একটি সফল উদাহরণ। জিন ক্লোনিং হলো একটি নির্দিষ্ট জিনের অসংখ্য কপি তৈরি করা, টিস্যু কালচার হলো কোষ বা টিস্যুকে কৃত্রিম মাধ্যমে চাষ করা এবং এক্সপ্লান্ট কালচার টিস্যু কালচারের একটি অংশ।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "রিকম্বিনেন্ট DNA তৈরি করার জন্য নিচের কোন এনজাইমটির প্রয়োজন হয়?",
+          options: {
+            a: "DNA polymerase",
+            b: "RNA polymerase",
+            c: "DNA Ligase",
+            d: "Restriction endonuclease",
+          },
+          correct: "d",
+          explanation:
+            "<p>রিকম্বিনেন্ট DNA (Recombinant DNA) তৈরি করার জন্য <b>রেস্ট্রিকশন এন্ডোনিউক্লিয়েজ (Restriction endonuclease)</b> নামক এনজাইমটির প্রয়োজন হয়। এই এনজাইম DNA-এর নির্দিষ্ট স্থানে কাটার মাধ্যমে ভেক্টর (যেমন প্লাজমিড) এবং কাঙ্ক্ষিত জিনকে খণ্ড করে। পরবর্তীতে <b>DNA লাইগেজ এনজাইম</b> সেই খণ্ডগুলোকে জোড়া লাগিয়ে রিকম্বিনেন্ট DNA তৈরি করে। DNA পলিমারেজ DNA প্রতিলিপিতে এবং RNA পলিমারেজ RNA তৈরিতে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "বর্তমানে কোনটি ব্যবহার করে রিকম্বিনেন্ট DNA শনাক্ত করা যায়?",
+          options: {
+            a: "Gene cloning",
+            b: "DNA finger printing",
+            c: "Gene therapy",
+            d: "DNA probe",
+          },
+          correct: "d",
+          explanation:
+            "<p>বর্তমানে রিকম্বিনেন্ট DNA শনাক্ত করার জন্য <b>DNA প্রোব (DNA probe)</b> ব্যবহার করা হয়। DNA প্রোব হলো তেজস্ক্রিয় বা ফ্লুরোসেন্ট মার্কার যুক্ত এক সূত্রক DNA খণ্ড যা টার্গেট DNA সিকোয়েন্সের সাথে পরিপূরকভাবে যুক্ত হতে পারে। এই হাইব্রিডাইজেশন প্রক্রিয়ার মাধ্যমে রিকম্বিনেন্ট DNA অণু সনাক্ত করা যায়। জিন ক্লোনিং হলো জিনের প্রতিলিপি তৈরি, DNA ফিঙ্গারপ্রিন্টিং অপরাধী শনাক্তকরণে এবং জিন থেরাপি রোগের চিকিৎসায় ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "DNA-কে খণ্ডিত করে কোন এনজাইম দ্বারা প্লাজমিডের নির্দিষ্ট অংশ কাটা হয়?",
+          options: {
+            a: "রেস্ট্রিকশন",
+            b: "লাইগেজ",
+            c: "লাইপেজ",
+            d: "প্রাইমেজ",
+          },
+          correct: "a",
+          explanation:
+            "<p>DNA-কে খণ্ডিত করার জন্য <b>রেস্ট্রিকশন এনজাইম (Restriction enzyme)</b> ব্যবহার করা হয়। এই এনজাইম DNA অণুর নির্দিষ্ট নিউক্লিওটাইড সিকোয়েন্স শনাক্ত করে এবং সেই স্থানে বা তার কাছাকাছি DNA দ্বিসূত্রককে কেটে ফেলে। প্লাজমিডের নির্দিষ্ট অংশ কাটার জন্যও একই এনজাইম ব্যবহৃত হয়, যা জেনেটিক ইঞ্জিনিয়ারিং-এ 'আণবিক কাঁচি' হিসেবে কাজ করে। লাইগেজ DNA খণ্ডকে জোড়া লাগায়, লাইপেজ লিপিড ভাঙে এবং প্রাইমেজ DNA প্রতিলিপির শুরুতে প্রাইমার তৈরি করে।</p>",
+        },
+        {
+          id: 8,
+          question: "কোন এনজাইম দ্বারা প্লাজমিডের নির্দিষ্ট অংশ কাটা হয়?",
+          options: {
+            a: "রেস্ট্রিকশন",
+            b: "লাইগেজ",
+            c: "লাইপেজ",
+            d: "প্রাইমেজ",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্লাজমিডের নির্দিষ্ট অংশ কাটার জন্য <b>রেস্ট্রিকশন এনজাইম (Restriction enzyme)</b> ব্যবহার করা হয়। এই এনজাইম DNA অণুর নির্দিষ্ট নিউক্লিওটাইড সিকোয়েন্স শনাক্ত করে এবং সেই স্থানে বা তার কাছাকাছি DNA দ্বিসূত্রককে কেটে ফেলে। জেনেটিক ইঞ্জিনিয়ারিং-এ, কাঙ্ক্ষিত জিনকে প্লাজমিডের সাথে সংযুক্ত করার জন্য উভয়কেই একই রেস্ট্রিকশন এনজাইম দিয়ে কাটা হয়, যাতে তাদের প্রান্তগুলো একে অপরের সাথে সংযুক্ত হতে পারে।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "রিকম্বিনেন্ট ডিএনএ টেকনোলজি প্রয়োগে সৃষ্ট নতুন জীবকে কী বলে?",
+          options: {
+            a: "ট্রান্সজেনিক",
+            b: "হাইব্রিড",
+            c: "সাইব্রিড",
+            d: "ক্লোন",
+          },
+          correct: "a",
+          explanation:
+            "<p>রিকম্বিনেন্ট DNA টেকনোলজি প্রয়োগে সৃষ্ট নতুন জীবকে <b>ট্রান্সজেনিক (Transgenic)</b> জীব বলা হয়। এই জীবগুলোর জিনোমে অন্য কোনো জীব থেকে আগত জিন (transgene) প্রবেশ করানো হয়, যার ফলে তারা নতুন বৈশিষ্ট্য ধারণ করে। হাইব্রিড দুটি ভিন্ন প্রজাতির যৌন মিলনের ফলে সৃষ্ট জীব, সাইব্রিড সাইটোপ্লাজমিক সংকরায়নের ফলে সৃষ্ট এবং ক্লোন হলো অযৌন জননের মাধ্যমে সৃষ্ট হুবহু প্রতিলিপি।</p>",
+        },
+        {
+          id: 10,
+          question: "DNA খণ্ডকে জোড়া লাগানোর জন্য ব্যবহৃত হয় কোন এনজাইম?",
+          options: {
+            a: "রেস্ট্রিকশন",
+            b: "হেলিকেজ",
+            c: "পলিমারেজ",
+            d: "লাইগেজ",
+          },
+          correct: "d",
+          explanation:
+            "<p>DNA খণ্ডকে জোড়া লাগানোর জন্য <b>DNA লাইগেজ (DNA ligase)</b> নামক এনজাইম ব্যবহৃত হয়। এটি DNA খণ্ডগুলির ফসফোডাইএস্টার বন্ধন তৈরি করে তাদের সংযুক্ত করে। রিকম্বিনেন্ট DNA প্রযুক্তিতে কাঙ্ক্ষিত জিনকে ভেক্টরের সাথে যুক্ত করতে এই এনজাইম অপরিহার্য। রেস্ট্রিকশন এনজাইম DNA কাটে, হেলিকেজ DNA দ্বিসূত্রককে খুলে দেয় এবং পলিমারেজ DNA প্রতিলিপিতে নতুন সূত্র তৈরি করে।</p>",
+        },
+        {
+          id: 11,
+          question: "জেনেটিক ইঞ্জিনিয়ারিং এর প্রধান জীবজ উপাদান কোনটি?",
+          options: {
+            a: "রেস্ট্রিকশন এনজাইম",
+            b: "এক্সপ্লান্ট",
+            c: "প্লাজমিড",
+            d: "এফ ফ্যাক্টর",
+          },
+          correct: "c",
+          explanation:
+            "<p>জেনেটিক ইঞ্জিনিয়ারিং এর প্রধান জীবজ উপাদানগুলোর মধ্যে <b>প্লাজমিড (Plasmid)</b> অন্যতম গুরুত্বপূর্ণ। প্লাজমিডকে <b>ভেক্টর</b> হিসেবে ব্যবহার করে কাঙ্ক্ষিত জিনকে অন্য কোষে প্রবেশ করানো হয় এবং তার প্রতিলিপি তৈরি করা হয়। রেস্ট্রিকশন এনজাইম DNA কাটতে ব্যবহৃত হয়, এক্সপ্লান্ট টিস্যু কালচারে ব্যবহৃত হয়, এবং এফ ফ্যাক্টর ব্যাকটেরিয়ার কনজুগেশনে ভূমিকা রাখে।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "কোন বিজ্ঞানী সর্বপ্রথম Genetic Engineering শব্দটি প্রথম ব্যবহার করেন?",
+          options: {
+            a: "Paul Berg",
+            b: "Edward Jenner",
+            c: "Karl Ereky",
+            d: "Jack Williamson",
+          },
+          correct: "d",
+          explanation:
+            "<p>আশ্চর্যজনক হলেও সত্যি যে, <b>জ্যাক উইলিয়ামসন (Jack Williamson)</b> নামক একজন কল্পবিজ্ঞান লেখক তার ১৯৫১ সালের উপন্যাস &quot;Dragon&#39;s Island&quot;-এ সর্বপ্রথম <b>&quot;Genetic Engineering&quot;</b> শব্দটি ব্যবহার করেন। পরবর্তীতে বৈজ্ঞানিক গবেষণার মাধ্যমে এই শব্দটি জীববিজ্ঞানীদের কাছে জনপ্রিয় হয়। জীববিজ্ঞানী পল বার্গ রিকম্বিনেন্ট DNA প্রযুক্তির একজন অগ্রণী ব্যক্তিত্ব, এডওয়ার্ড জেনার টিকার জনক এবং কার্ল এরেকি &quot;Biotechnology&quot; শব্দটি প্রথম ব্যবহার করেন।</p>",
+        },
+        {
+          id: 13,
+          question: "PCR কৌশল আবিষ্কার করেন কোন বিজ্ঞানী?",
+          options: {
+            a: "Morel and Martin",
+            b: "Karl Ereky",
+            c: "Kary B. Mullis",
+            d: "Jack Williamson",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>ক্যারি বি. মুলিস (Kary B. Mullis)</b> ১৯৮৩ সালে <b>পলিমারেজ চেইন রিঅ্যাকশন (PCR)</b> কৌশল আবিষ্কার করেন। এই উদ্ভাবনী কৌশলটি অল্প পরিমাণ ডিএনএ-কে দ্রুত এবং বহুগুণিত করতে সাহায্য করে, যা জৈবপ্রযুক্তি এবং জিন প্রকৌশলের ক্ষেত্রে একটি যুগান্তকারী আবিষ্কার এবং এর জন্য তিনি ১৯৯৩ সালে নোবেল পুরস্কার লাভ করেন।</p>",
+        },
+        {
+          id: 14,
+          question: "বিশ্বের প্রথম সিনথেটিক জীবের নাম কি?",
+          options: {
+            a: "সাইব্রিড",
+            b: "জিনগুয়া-১",
+            c: "সিনথিয়া",
+            d: "ডলি",
+          },
+          correct: "c",
+          explanation:
+            "<p>২০১০ সালে বিজ্ঞানী <b>ক্রেইগ ভেন্টার (Craig Venter)</b> এবং তার দল <b>&quot;সিনথিয়া&quot; (Synthia)</b> নামক বিশ্বের প্রথম সিনথেটিক জীব তৈরি করেন। এটি <i>Mycoplasma mycoides</i> নামক ব্যাকটেরিয়ার একটি কৃত্রিমভাবে সংশ্লেষিত জিনোম প্রতিস্থাপন করে তৈরি করা হয়েছিল, যা সম্পূর্ণরূপে রাসায়নিকভাবে তৈরি করা হয়।</p>",
+        },
+        {
+          id: 15,
+          question: "Recombinant DNA এর ধাপ কোনটি?",
+          options: {
+            a: "এক্সপ্লান্ট সংগ্রহ করে কর্তন",
+            b: "বাহক দ্বারা জিন খণ্ড করা",
+            c: "অণুচারা সৃষ্টি",
+            d: "লাইগেজ এনজাইমের ব্যবহার",
+          },
+          correct: "d",
+          explanation:
+            "<p>রিকম্বিনেন্ট ডিএনএ (Recombinant DNA) প্রযুক্তির একটি গুরুত্বপূর্ণ ধাপ হলো <b>লাইগেজ এনজাইমের (Ligase enzyme) ব্যবহার</b>। এই এনজাইম রেস্ট্রিকশন এনজাইম দ্বারা কাটা ডিএনএ খণ্ডগুলোকে (যেমন ভেক্টর এবং কাঙ্ক্ষিত জিন) একসাথে জোড়া লাগাতে সাহায্য করে, যার ফলে একটি সম্পূর্ণ রিকম্বিনেন্ট ডিএনএ অণু তৈরি হয়। অন্যান্য ধাপগুলোর মধ্যে রয়েছে উপযুক্ত জিন নির্বাচন, ডিএনএ খণ্ড তৈরি, বাহকের সাথে সংযোগ এবং উপযুক্ত পোষক কোষে প্রবেশ করানো।</p>",
+        },
+        {
+          id: 16,
+          question: "রেস্ট্রিকশন এনজাইম কী কাজে ব্যবহৃত হয়?",
+          options: {
+            a: "mRNA-এর নির্দিষ্ট অংশ কাটতে",
+            b: "Amino acid জোড়া লাগাতে",
+            c: "tRNA-এর নির্দিষ্ট অংশ কাটতে",
+            d: "DNA এর নির্দিষ্ট অংশ কাটতে",
+          },
+          correct: "d",
+          explanation:
+            "<p>রেস্ট্রিকশন এনজাইম, যা আণবিক কাঁচি নামেও পরিচিত, <b>ডিএনএ (DNA) অণুর নির্দিষ্ট সিকোয়েন্সে কাটার জন্য</b> ব্যবহৃত হয়। এই এনজাইমগুলো ব্যাকটেরিয়া থেকে আবিষ্কৃত হয়েছে এবং জিন প্রকৌশল, ডিএনএ ক্লোনিং এবং অন্যান্য আণবিক জীববিজ্ঞানের গবেষণায় অপরিহার্য হাতিয়ার হিসেবে ব্যবহৃত হয়। তারা RNA বা অ্যামিনো অ্যাসিডের সাথে সরাসরি কাজ করে না।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "জীবের জিনোমে নতুন জিন বিন্যাস তৈরির সর্বাধুনিক পদ্ধতি কোনটি?",
+          options: {
+            a: "সংকরায়ন",
+            b: "ক্লোনিং",
+            c: "টিস্যু কালচার",
+            d: "জেনেটিক ইঞ্জিনিয়ারিং",
+          },
+          correct: "d",
+          explanation:
+            "<p>জীবের জিনোমে নতুন জিন বিন্যাস তৈরির সর্বাধুনিক পদ্ধতি হলো <b>জেনেটিক ইঞ্জিনিয়ারিং (Genetic Engineering)</b>। এই প্রযুক্তির মাধ্যমে বিজ্ঞানীরা সরাসরি জীবের জিনগত উপাদান পরিবর্তন করতে পারেন, যার ফলে কাঙ্ক্ষিত বৈশিষ্ট্য আনা সম্ভব হয়, যেমন রোগ প্রতিরোধ ক্ষমতা বৃদ্ধি বা উন্নত গুণাবলী। সংকরায়ন, ক্লোনিং এবং টিস্যু কালচারও গুরুত্বপূর্ণ পদ্ধতি হলেও জিনোম স্তরে সুনির্দিষ্ট পরিবর্তন আনার ক্ষেত্রে জেনেটিক ইঞ্জিনিয়ারিং সবচেয়ে উন্নত এবং শক্তিশালী।</p>",
+        },
+        {
+          id: 18,
+          question: "নিচের কোনটি রেস্ট্রিকশন এন্ডোনিউক্লিয়েজ?",
+          options: {
+            a: "Eco RII",
+            b: "Hind II",
+            c: "Bam HII",
+            d: "Mbo-I",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রদত্ত অপশনগুলোর মধ্যে <b>Hind II</b> হলো একটি সুপরিচিত <b>রেস্ট্রিকশন এন্ডোনিউক্লিয়েজ (Restriction endonuclease)</b> এনজাইম। এই এনজাইমটি <i>Haemophilus influenzae Rd</i> নামক ব্যাকটেরিয়া থেকে আবিষ্কৃত হয়েছে এবং এটি ডিএনএ-র একটি নির্দিষ্ট ছয়-বেস পেয়ার সিকোয়েন্সে কাটে। Eco RII, Bam HII এবং Mbo-I ও রেস্ট্রিকশন এন্ডোনিউক্লিয়েজ এনজাইমের উদাহরণ, কিন্তু প্রশ্নে প্রদত্ত অপশনগুলোর মধ্যে Hind II একটি নির্দিষ্ট উদাহরণ।</p>",
+        },
+        {
+          id: 19,
+          question: "প্লাজমিড পাওয়া যায় কোনটিতে?",
+          options: {
+            a: "শৈবালে",
+            b: "ফার্নে",
+            c: "ব্যাকটেরিয়ায়",
+            d: "মসে",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্লাজমিড হলো ছোট, গোলাকার ডিএনএ অণু যা মূলত <b>ব্যাকটেরিয়ার (Bacteria)</b> কোষের সাইটোপ্লাজমে বিদ্যমান থাকে। এটি ব্যাকটেরিয়ার মূল ক্রোমোজোমাল ডিএনএ থেকে আলাদাভাবে প্রতিলিপি তৈরি করতে পারে এবং প্রায়শই জিন প্রকৌশলে ভেক্টর হিসেবে ব্যবহৃত হয়। কিছু ছত্রাক বা আর্কিয়ায় প্লাজমিড থাকতে পারে, তবে প্রধানত ব্যাকটেরিয়ার বৈশিষ্ট্য।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "কোষ বহির্ভূতভাবে DNA ক্লোনিং এর দ্রুততম পদ্ধতিকে কী বলা হয়?",
+          options: {
+            a: "টিস্যু কালচার",
+            b: "PCR",
+            c: "রিকম্বিনেন্ট DNA প্রযুক্তি",
+            d: "জিন ক্লোনিং",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোষ বহির্ভূতভাবে (In vitro) ডিএনএ ক্লোনিং এর দ্রুততম পদ্ধতি হলো <b>পলিমারেজ চেইন রিঅ্যাকশন (PCR)</b>। এই পদ্ধতিতে একটি ডিএনএ নমুনার লক্ষ লক্ষ থেকে বিলিয়ন বিলিয়ন কপি কয়েক ঘণ্টার মধ্যেই তৈরি করা সম্ভব। এটি ডিএনএ অ্যাম্প্লিফিকেশন (DNA amplification) এর একটি অত্যন্ত কার্যকর কৌশল। টিস্যু কালচার উদ্ভিদ প্রজননে, রিকম্বিনেন্ট DNA প্রযুক্তি জিন স্থানান্তরে এবং জিন ক্লোনিং ব্যাপক অর্থে জিনের অনুলিপি তৈরিতে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 21,
+          question: "জেনেটিক ইঞ্জিনিয়ারিং এর মূল উপাদান কোনটি?",
+          options: {
+            a: "ছত্রাক",
+            b: "ব্যাকটেরিয়া",
+            c: "শৈবাল",
+            d: "ভাইরাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>জেনেটিক ইঞ্জিনিয়ারিং এর অন্যতম মূল উপাদান হলো <b>ব্যাকটেরিয়া</b>। ব্যাকটেরিয়া প্রায়শই জিন স্থানান্তরের বাহক হিসেবে (যেমন প্লাজমিড ব্যবহার করে) এবং রিকম্বিনেন্ট ডিএনএ তৈরির জন্য পোষক কোষ হিসেবে ব্যবহৃত হয়। ব্যাকটেরিয়ার সহজলভ্যতা, দ্রুত বংশবৃদ্ধি এবং জিনগতভাবে পরিবর্তনের সুবিধা জেনেটিক ইঞ্জিনিয়ারিং গবেষণায় তাদের অপরিহার্য করে তুলেছে।</p>",
+        },
+        {
+          id: 22,
+          question: "জৈবপ্রযুক্তির অন্যতম মৌলিক হাতিয়ার কোনটি?",
+          options: {
+            a: "ব্যাকটেরিয়া",
+            b: "প্লাসমিড",
+            c: "ভাইরাস",
+            d: "হরমোন",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>প্লাসমিড (Plasmid)</b> হলো জৈবপ্রযুক্তির অন্যতম মৌলিক হাতিয়ার। এটি ব্যাকটেরিয়া কোষে বিদ্যমান ছোট, বৃত্তাকার ডিএনএ অণু যা <b>বাহক (vector)</b> হিসেবে কাজ করে এবং জিন ক্লোনিং, জিন থেরাপি এবং অন্যান্য জৈবপ্রযুক্তিগত প্রয়োগে বহুল ব্যবহৃত হয়। প্লাজমিডের মাধ্যমে কাঙ্ক্ষিত জিনকে একটি জীব থেকে অন্য জীবে স্থানান্তর করা সম্ভব হয়।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "কোন প্রক্রিয়ায় অপত্য কোষ তৈরির জন্য পুংলিঙ্গ অপ্রয়োজনীয়?",
+          options: {
+            a: "হাইব্রিডাইজেশন",
+            b: "মিউটেশন",
+            c: "যৌন জনন",
+            d: "ক্লোনিং",
+          },
+          correct: "d",
+          explanation:
+            "<p><b>ক্লোনিং (Cloning)</b> এমন একটি প্রক্রিয়া যেখানে একটি একক কোষ বা জীব থেকে জেনেটিকালি অভিন্ন অপত্য তৈরি করা হয়। এই প্রক্রিয়ায় <b>পুংলিঙ্গের অংশগ্রহণের কোনো প্রয়োজন হয় না</b>, কারণ এটি অযৌন জননের মাধ্যমে সম্পন্ন হয়ে থাকে। হাইব্রিডাইজেশন এবং যৌন জনন উভয়ই পুং ও স্ত্রী গ্যামেটের মিলন জড়িত, এবং মিউটেশন জিনগত পরিবর্তন যা প্রজনন পদ্ধতি থেকে ভিন্ন।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "জিন ক্লোনিং এর ক্ষেত্রে পোষক হিসেবে কোনটি ব্যবহার করা হয়?",
+          options: {
+            a: "ব্যাকটেরিয়া",
+            b: "ভাইরাস",
+            c: "প্রোটোজোয়া",
+            d: "মাইকোপ্লাজমা",
+          },
+          correct: "a",
+          explanation:
+            "<p>জিন ক্লোনিং এর ক্ষেত্রে <b>ব্যাকটেরিয়া (Bacteria)</b> বহুলভাবে পোষক (Host) হিসেবে ব্যবহৃত হয়। বিশেষত ই-কোলাই (<i>Escherichia coli</i>) ব্যাকটেরিয়ার প্লাজমিড ডিএনএ প্রায়শই কাঙ্ক্ষিত জিনকে প্রতিস্থাপিত করে নতুন ডিএনএর প্রতিলিপি তৈরির জন্য ব্যবহার করা হয়। ব্যাকটেরিয়া সহজে চাষ করা যায় এবং দ্রুত বংশবৃদ্ধি করে, যা জিন ক্লোনিং এর জন্য তাদের আদর্শ করে তোলে।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "একটি জিনকে দ্রুত বহু কপি জিনে পরিণত করা যায় কোন পদ্ধতিতে?",
+          options: {
+            a: "রিপ্রোডাকটিভ ক্লোনিং",
+            b: "টিস্যু কালচার",
+            c: "রিকম্বিনেন্ট DNA প্রযুক্তি",
+            d: "PCR",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি জিনকে দ্রুত বহু কপি জিনে পরিণত করার সবচেয়ে কার্যকর এবং দ্রুততম পদ্ধতি হলো <b>পলিমারেজ চেইন রিঅ্যাকশন (PCR)</b>। এই প্রক্রিয়াটি কোষের বাইরে (ইন ভিট্রো) সম্পন্ন হয় এবং অল্প সময়ের মধ্যেই একটি ডিএনএ নমুনার লক্ষ লক্ষ থেকে বিলিয়ন বিলিয়ন কপি জিন তৈরি করতে পারে। এটি আণবিক জীববিজ্ঞানের একটি মৌলিক কৌশল।</p>",
+        },
+        {
+          id: 26,
+          question: "পল ডরসেট স্ত্রী ভেড়া থেকে কী সংগ্রহ করা হয়?",
+          options: {
+            a: "নিষিক্ত ডিম্বাণু",
+            b: "স্তনগ্রন্থি কোষ",
+            c: "পরিণত শুক্রাণু",
+            d: "অনিষিক্ত ডিম্বাণু",
+          },
+          correct: "d",
+          explanation:
+            "<p>রিপ্রোডাকটিভ ক্লোনিংয়ের জন্য, যেমন বিখ্যাত ডলি ভেড়া তৈরির ক্ষেত্রে, <b>পল ডরসেট (Poll Dorset) স্ত্রী ভেড়া থেকে অনিষিক্ত ডিম্বাণু (Unfertilized egg) সংগ্রহ করা হয়েছিল</b>। এই ডিম্বাণুর নিউক্লিয়াস অপসারণ করে অন্য একটি ভেড়ার দেহকোষের নিউক্লিয়াস প্রতিস্থাপন করা হয়, যা নিউক্লিয়ার ট্রান্সফার (Nuclear transfer) নামে পরিচিত।</p>",
+        },
+        {
+          id: 27,
+          question: "রিপ্রোডাকটিভ ক্লোনিং পদ্ধতিতে তৈরি প্রথম ভেড়াটির নাম কী?",
+          options: {
+            a: "কলি",
+            b: "ডলি",
+            c: "মিলি",
+            d: "শিলা",
+          },
+          correct: "b",
+          explanation:
+            "<p>রিপ্রোডাকটিভ ক্লোনিং পদ্ধতিতে তৈরি প্রথম স্তন্যপায়ী প্রাণী হলো ভেড়া <b>ডলি (Dolly)</b>। এটি ১৯৯৬ সালে রোজলিন ইনস্টিটিউট এবং পিরামিডাল কন্ট্রোল লিমিটেড নামক একটি ব্রিটিশ জৈবপ্রযুক্তি কোম্পানি কর্তৃক স্কটল্যান্ডে জন্মগ্রহণ করে। ডলির জন্ম ক্লোনিং গবেষণায় একটি গুরুত্বপূর্ণ মাইলফলক ছিল।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "রিপ্রোডাকটিভ ক্লোনিং এ সৃষ্ট প্রথম ভেড়া ডলির জন্ম হয় কত সালে?",
+          options: {
+            a: "১৯৯৪",
+            b: "১৯৯৫",
+            c: "১৯৯৬",
+            d: "১৯৯৭",
+          },
+          correct: "c",
+          explanation:
+            "<p>রিপ্রোডাকটিভ ক্লোনিং এর মাধ্যমে সৃষ্ট প্রথম ভেড়া ডলির জন্ম হয় <b>১৯৯৬ সালে</b>। এটি স্কটল্যান্ডের রোজলিন ইনস্টিটিউটে তৈরি হয়েছিল এবং এর ঘোষণা ১৯৯৭ সালে বিশ্বজুড়ে আলোচনার ঝড় তোলে। ডলির জন্ম নিউক্লিয়ার ট্রান্সফার পদ্ধতির মাধ্যমে একটি পূর্ণাঙ্গ প্রাণীর ক্লোন করার সম্ভাবনা প্রমাণ করে।</p>",
+        },
+        {
+          id: 29,
+          question: "GMO এর পূর্ণরূপ কী?",
+          options: {
+            a: "Genetic Modification Organism",
+            b: "Genetically Modern Organism",
+            c: "General Macro Organism",
+            d: "Genetically Modified Organism",
+          },
+          correct: "d",
+          explanation:
+            "<p>GMO এর পূর্ণরূপ হলো <b>Genetically Modified Organism</b>, যার অর্থ হলো জিনগতভাবে পরিবর্তিত জীব। এই জীবগুলোর জিনোম কৃত্রিমভাবে পরিবর্তন করা হয়েছে, যা তাদের বৈশিষ্ট্য, বৃদ্ধি, রোগ প্রতিরোধ ক্ষমতা বা অন্য কোনো গুণকে উন্নত করতে পারে।</p>",
+        },
+        {
+          id: 30,
+          question: "PCR এর সঠিক পূর্ণরূপ কী?",
+          options: {
+            a: "Peptide Chain Reaction",
+            b: "Polysaccharide Chain Reaction",
+            c: "Polyribosome Chain Reaction",
+            d: "Polymerase Chain Reaction",
+          },
+          correct: "d",
+          explanation:
+            "<p>PCR এর সঠিক পূর্ণরূপ হলো <b>Polymerase Chain Reaction</b>। এটি একটি আণবিক জীববিজ্ঞান কৌশল যা ডিএনএ-এর একটি নির্দিষ্ট অঞ্চলের অসংখ্য প্রতিলিপি তৈরি করতে ব্যবহৃত হয়। এই প্রক্রিয়ায় ডিএনএ পলিমারেজ নামক এনজাইম ব্যবহার করা হয় এবং এটি জেনেটিক গবেষণায়, রোগ নির্ণয়ে এবং ফরেনসিক বিজ্ঞানে ব্যাপকভাবে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 31,
+          question: "জিন প্রকৌশলে কোনটি উত্তম বাহক?",
+          options: {
+            a: "Agrobacterium tumefaciens",
+            b: "Escherichia coli",
+            c: "Vibrio cholerae",
+            d: "Bacillus subtilis",
+          },
+          correct: "a",
+          explanation:
+            "<p>জিন প্রকৌশলে <b><i>Agrobacterium tumefaciens</i></b> একটি উত্তম বাহক (vector) হিসেবে বিবেচিত হয়, বিশেষ করে <b>উদ্ভিদ কোষে জিন স্থানান্তরের জন্য</b>। এই ব্যাকটেরিয়ামের Ti প্লাজমিড (Tumor-inducing plasmid) ব্যবহার করে কাঙ্ক্ষিত জিন উদ্ভিদের জিনোমে সফলভাবে প্রবেশ করানো সম্ভব হয়, যা ট্রান্সজেনিক উদ্ভিদ তৈরিতে অত্যন্ত কার্যকর। <i>Escherichia coli</i> সাধারণত ব্যাকটেরিয়াতে জিন স্থানান্তরে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 32,
+          question: "প্লাসমিড এর ক্ষেত্রে প্রযোজ্য নয় কোনটি?",
+          options: {
+            a: "বৃত্তাকার DNA",
+            b: "স্বল্প জিন বহন করে",
+            c: "এক সূত্রক DNA বহন",
+            d: "দ্বি-সূত্রক DNA বহন করে",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্লাসমিড হলো ব্যাকটেরিয়ার কোষে বিদ্যমান ছোট, বৃত্তাকার ডিএনএ অণু যা সাধারণত <b>দ্বি-সূত্রক (double-stranded)</b> হয়। এটি ব্যাকটেরিয়ার মূল ক্রোমোজোমাল ডিএনএ থেকে আলাদাভাবে প্রতিলিপি তৈরি করতে পারে এবং তুলনামূলকভাবে স্বল্প সংখ্যক জিন বহন করে। তাই, <b>এক সূত্রক DNA বহন করা</b> প্লাজমিডের ক্ষেত্রে <b>প্রযোজ্য নয়</b>।</p>",
+        },
+        {
+          id: 33,
+          question: "রেস্ট্রিকশন এনজাইম নয় কোনটি?",
+          options: {
+            a: "Eco RI",
+            b: "Hind III",
+            c: "Hpa-II",
+            d: "All PQ",
+          },
+          correct: "d",
+          explanation:
+            "<p><b>Eco RI, Hind III, এবং Hpa-II</b> প্রত্যেকেই সুপরিচিত <b>রেস্ট্রিকশন এনজাইম</b>। এই এনজাইমগুলো ব্যাকটেরিয়া থেকে প্রাপ্ত এবং ডিএনএ অণুর নির্দিষ্ট সিকোয়েন্সে কাটার জন্য ব্যবহৃত হয়। <b>&quot;All PQ&quot;</b> কোনো রেস্ট্রিকশন এনজাইম নয়, এটি সম্ভবত অপশন নির্বাচনের একটি ভুল।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
